@@ -679,10 +679,10 @@ class TrainingLoop(Generic[SampleType, BatchType], ABC):
                 # Save the last successful finished epoch
                 self._epoch = epoch
 
-                should_stop = False
+                self._should_stop = False
                 if stopper is not None and stopper.should_evaluate(epoch):
                     if stopper.should_stop(epoch):
-                        should_stop = True
+                        self._should_stop = True
                     # Since the model is also used within the stopper, its graph and cache have to be cleared
                     self._free_graph_and_cache()
                 # When the stopper obtained a new best epoch, this model has to be saved for reconstruction
@@ -730,7 +730,7 @@ class TrainingLoop(Generic[SampleType, BatchType], ABC):
                 # MyPy overrides are because you should
                 if (
                     minutes_since_last_checkpoint >= checkpoint_frequency  # type: ignore
-                    or should_stop
+                    or self._should_stop
                     or epoch == num_epochs
                 ):
                     # When there wasn't a best epoch the checkpoint path should be None
@@ -744,7 +744,7 @@ class TrainingLoop(Generic[SampleType, BatchType], ABC):
                     )  # type: ignore
                     last_checkpoint = time.time()
 
-            if should_stop and last_best_epoch is not None and best_epoch_model_file_path is not None:
+            if self._should_stop and last_best_epoch is not None and best_epoch_model_file_path is not None:
                 self._load_state(path=best_epoch_model_file_path)
                 # Delete temporary best epoch model
                 if pathlib.Path.is_file(best_epoch_model_file_path):
